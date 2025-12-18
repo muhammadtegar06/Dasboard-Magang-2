@@ -8,6 +8,33 @@ export const COLORS = {
   danger: '#ef4444'
 };
 
+export const DIVISI_LIST = [
+  { code: 'DSPN', name: 'DSPN - Divisi Sekretariat Perusahaan' },
+  { code: 'DTPI', name: 'DTPI - Divisi Satuan Pengawasan Intern' },
+  { code: 'DTAN', name: 'DTAN - Divisi Tanaman' },
+  { code: 'DTPL', name: 'DTPL - Divisi Teknik & Pengolahan' },
+  { code: 'DINF', name: 'DINF - Divisi Infrastruktur' },
+  { code: 'DITN', name: 'DITN - Divisi Investasi Tanaman' },
+  { code: 'DPSN', name: 'DPSN - Divisi Pemasaran' },
+  { code: 'DRPL', name: 'DRPL - Divisi Rantai Pasok & Logistik' },
+  { code: 'DPEN', name: 'DPEN - Divisi Pengadaan' },
+  { code: 'DSKP', name: 'DSKP - Divisi Strategi Perusahaan & Pengendalian Kinerja' },
+  { code: 'DSMS', name: 'DSMS - Divisi Sistem Manajemen & Sustainability' },
+  { code: 'DRPH', name: 'DRPH - Divisi Riset, Pengembangan Bisnis & Hilirisasi' },
+  { code: 'DKSH', name: 'DKSH - Divisi Keuangan Strategis & Hubungan Investor' },
+  { code: 'DPBA', name: 'DPBA - Divisi Perbendaharaan & Anggaran' },
+  { code: 'DAPN', name: 'DAPN - Divisi Akuntansi & Perpajakan' },
+  { code: 'DMRS', name: 'DMRS - Divisi Manajemen Risiko' },
+  { code: 'DPSB', name: 'DPSB - Divisi Pengembangan SDM & Budaya' },
+  { code: 'DSDM', name: 'DSDM - Divisi Operasional SDM' },
+  { code: 'DHPU', name: 'DHPU - Divisi HPS & Umum' },
+  { code: 'DTIS', name: 'DTIS - Divisi Teknologi Informasi' },
+  { code: 'DHKT', name: 'DHKT - Divisi Hubungan Kelembagaan & TJSL' },
+  { code: 'DHKM', name: 'DHKM - Divisi Hukum' },
+  { code: 'DPSR', name: 'DPSR - Divisi PSR & Plasma' },
+  { code: 'DPMO', name: 'DPMO - Project Management Office' }
+];
+
 export const INITIAL_BOXES = [
   {
     id: 1,

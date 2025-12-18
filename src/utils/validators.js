@@ -1,4 +1,7 @@
 export const validateBoxForm = (formData) => {
+  if (!formData.divisi) {
+    return { valid: false, message: 'Mohon pilih Divisi Pemilik' };
+  }
   if (!formData.asal_arsip) {
     return { valid: false, message: 'Mohon isi Asal Arsip' };
   }

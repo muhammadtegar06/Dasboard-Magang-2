@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus, XCircle, Send, Info } from 'lucide-react';
-import { COLORS } from '../../constants/colors';
+import { COLORS, DIVISI_LIST } from '../../constants/colors';
 import { validateBoxForm, validateDocuments } from '../../utils/validators';
 import { getCurrentDate } from '../../utils/formatters';
 
@@ -35,7 +35,7 @@ export const InputBoxView = ({
     const newBox = {
       id: Math.floor(Math.random() * 10000),
       tanggal: getCurrentDate(),
-      divisi: userRole === 'admin' ? 'Administrator' : formData.divisi || 'UMUM',
+      divisi: formData.divisi,
       asal_arsip: formData.asal_arsip,
       dokumen: docItems,
       jumlah_bantex: calculatedBantex,
@@ -58,7 +58,7 @@ export const InputBoxView = ({
             Form Input Box & Bantex
           </h2>
           <span className="text-xs bg-white bg-opacity-20 text-white px-2 py-1 rounded">
-            Divisi: {userRole === 'admin' ? 'Administrator' : formData.divisi || 'User Divisi'}
+            Divisi: {DIVISI_LIST.find(d => d.code === formData.divisi)?.code || 'Pilih Divisi'}
           </span>
         </div>
 
@@ -70,13 +70,19 @@ export const InputBoxView = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Divisi Pemilik</label>
-                  <input
-                    type="text"
-                    value={userRole === 'user' ? 'Divisi Anda' : formData.divisi}
-                    onChange={(e) => userRole === 'admin' && onFormChange('divisi', e.target.value)}
-                    disabled={userRole === 'user'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
-                  />
+                  <select
+                    value={formData.divisi}
+                    onChange={(e) => onFormChange('divisi', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#1594a2] focus:border-transparent bg-white"
+                    required
+                  >
+                    <option value="">-- Pilih Divisi --</option>
+                    {DIVISI_LIST.map((divisi) => (
+                      <option key={divisi.code} value={divisi.code}>
+                        {divisi.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Asal Arsip (Lokasi)</label>
