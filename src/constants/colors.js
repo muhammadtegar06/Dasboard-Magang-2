@@ -35,6 +35,10 @@ export const DIVISI_LIST = [
   { code: 'DPMO', name: 'DPMO - Project Management Office' }
 ];
 
+export const LOKASI_ARSIP_LIST = [
+  { code: 'HO', name: 'Head Office (HO)' }
+];
+
 export const INITIAL_BOXES = [
   {
     id: 1,

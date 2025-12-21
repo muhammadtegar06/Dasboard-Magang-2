@@ -1,205 +1,439 @@
-import React from 'react';
-import { Plus, XCircle, Send, Info } from 'lucide-react';
-import { COLORS, DIVISI_LIST } from '../../constants/colors';
-import { validateBoxForm, validateDocuments } from '../../utils/validators';
+import React, { useState } from 'react';
+import { Plus, XCircle, Send, Info, Package, ChevronDown } from 'lucide-react';
+import { COLORS, DIVISI_LIST, LOKASI_ARSIP_LIST } from '../../constants/colors';
+import { validateBoxForm, validateDocuments, validatePeriodeFormat } from '../../utils/validators';
 import { getCurrentDate } from '../../utils/formatters';
+import { useBoxes } from '../../hooks/useBoxes';
 
-export const InputBoxView = ({
-  userRole,
-  formData,
-  docItems,
-  onFormChange,
-  onDocChange,
-  onAddDocRow,
-  onRemoveDocRow,
-  onSubmit
-}) => {
-  const calculatedBantex = docItems.length;
-  const isBoxFull = calculatedBantex >= 5;
+export default function InputBoxView() {
+  const {
+    formData,
+    setFormData,
+    boxesData,
+    currentBoxIndex,
+    currentBantexForm,
+    setCurrentBantexForm,
+    addDocToBantex,
+    removeDocFromBantex,
+    handleBantexDocChange,
+    saveBantex,
+    removeBantex,
+    getBantexCount,
+    getBoxCount,
+    submitBox,
+    resetForm
+  } = useBoxes();
 
+  const [showBantexForm, setShowBantexForm] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const currentBox = boxesData[currentBoxIndex];
+
+  // Handle form field changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      const newErrors = { ...errors };
+      delete newErrors[name];
+      setErrors(newErrors);
+    }
+  };
+
+  // Handle document field changes
+  const handleDocChange = (index, field, value) => {
+    handleBantexDocChange(index, field, value);
+    if (errors[`doc_${index}`]) {
+      const newErrors = { ...errors };
+      delete newErrors[`doc_${index}`];
+      setErrors(newErrors);
+    }
+  };
+
+  // Validate and save bantex
+  const handleSaveBantex = () => {
+    const newErrors = {};
+
+    if (!currentBantexForm.nama_bantex.trim()) {
+      newErrors.nama_bantex = 'Nama Bantex harus diisi';
+    }
+
+    // Validate documents
+    for (let i = 0; i < currentBantexForm.dokumen.length; i++) {
+      const doc = currentBantexForm.dokumen[i];
+      if (!doc.nama.trim()) {
+        newErrors[`doc_${i}_nama`] = 'Nama dokumen harus diisi';
+      }
+      if (!doc.periode.trim()) {
+        newErrors[`doc_${i}_periode`] = 'Periode harus diisi';
+      } else if (!validatePeriodeFormat(doc.periode)) {
+        newErrors[`doc_${i}_periode`] = 'Format periode harus V/YYYY (contoh: I/2023)';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    saveBantex();
+    setShowBantexForm(false);
+    setErrors({});
+  };
+
+  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const formValidation = validateBoxForm(formData);
-    if (!formValidation.valid) {
-      alert(formValidation.message);
+    const newErrors = {};
+
+    if (!formData.divisi) {
+      newErrors.divisi = 'Pilih divisi terlebih dahulu';
+    }
+
+    if (!formData.lokasi_arsip) {
+      newErrors.lokasi_arsip = 'Pilih lokasi arsip terlebih dahulu';
+    }
+
+    if (getBantexCount() === 0) {
+      newErrors.bantex = 'Minimal 1 bantex harus ditambahkan';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
-    const docsValidation = validateDocuments(docItems);
-    if (!docsValidation.valid) {
-      alert(docsValidation.message);
-      return;
-    }
+    // Create box data structure
+    // Flatten bantex items to dokumen array
+    const allDokumen = [];
+    let totalBantex = 0;
+    
+    boxesData.forEach(box => {
+      box.bantex_items.forEach(bantex => {
+        totalBantex++;
+        bantex.dokumen.forEach(doc => {
+          allDokumen.push({
+            nama: doc.nama,
+            periode: doc.periode,
+            bantex_no: totalBantex
+          });
+        });
+      });
+    });
 
     const newBox = {
-      id: Math.floor(Math.random() * 10000),
+      id: Date.now(),
       tanggal: getCurrentDate(),
       divisi: formData.divisi,
-      asal_arsip: formData.asal_arsip,
-      dokumen: docItems,
-      jumlah_bantex: calculatedBantex,
-      keterangan: formData.keterangan,
+      asal_arsip: formData.lokasi_arsip,
+      lokasi_arsip: formData.lokasi_arsip,
+      dokumen: allDokumen,
+      jumlah_bantex: getBantexCount(),
+      jumlah_box: Math.ceil(getBantexCount() / 6),
+      keterangan: 'Baru disubmit',
       status: 'pending',
       nomor_kotak: null,
       admin_note: ''
     };
 
-    onSubmit(newBox);
-    alert('Data Box berhasil diajukan. Menunggu Admin mengisi Nomor Kotak.');
+    submitBox(newBox);
+    alert('Data berhasil disubmit! Tunggu persetujuan admin.');
   };
 
   return (
-    <div className="max-w-5xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center" style={{ backgroundColor: COLORS.primary }}>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Plus size={20} className="text-[#b6d250]" />
-            Form Input Box & Bantex
-          </h2>
-          <span className="text-xs bg-white bg-opacity-20 text-white px-2 py-1 rounded">
-            Divisi: {DIVISI_LIST.find(d => d.code === formData.divisi)?.code || 'Pilih Divisi'}
-          </span>
+    <div className="w-full min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">repository arsip</h1>
+          <p className="text-gray-600">Kelola dokumen dan bantex arsip dengan mudah</p>
         </div>
 
-        <div className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Bagian Header Box */}
-            <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-              <h3 className="text-sm font-bold text-[#0c616a] uppercase mb-4 border-b border-gray-200 pb-2">A. Informasi Box</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Divisi Pemilik</label>
-                  <select
-                    value={formData.divisi}
-                    onChange={(e) => onFormChange('divisi', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#1594a2] focus:border-transparent bg-white"
-                    required
-                  >
-                    <option value="">-- Pilih Divisi --</option>
-                    {DIVISI_LIST.map((divisi) => (
-                      <option key={divisi.code} value={divisi.code}>
-                        {divisi.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Asal Arsip (Lokasi)</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.asal_arsip}
-                    onChange={(e) => onFormChange('asal_arsip', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#1594a2] focus:border-transparent"
-                    placeholder="Contoh: Rak Gudang Lt. 2 / Lemari 3"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan Tambahan Box</label>
-                  <input
-                    type="text"
-                    value={formData.keterangan}
-                    onChange={(e) => onFormChange('keterangan', e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#1594a2] focus:border-transparent"
-                    placeholder="Opsional: Keterangan isi box secara umum..."
-                  />
-                </div>
+        {/* Main Form */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <form onSubmit={handleSubmit}>
+            {/* Row 1: Divisi & Lokasi Arsip */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Divisi */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Divisi <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="divisi"
+                  value={formData.divisi}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition ${
+                    errors.divisi
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                >
+                  <option value="">-- Pilih Divisi --</option>
+                  {DIVISI_LIST.map((divisi) => (
+                    <option key={divisi.code} value={divisi.code}>
+                      {divisi.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.divisi && <p className="text-red-500 text-xs mt-1">{errors.divisi}</p>}
+              </div>
+
+              {/* Lokasi Arsip */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Lokasi Arsip <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="lokasi_arsip"
+                  value={formData.lokasi_arsip}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition ${
+                    errors.lokasi_arsip
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                >
+                  <option value="">-- Pilih Lokasi --</option>
+                  {LOKASI_ARSIP_LIST.map((lokasi) => (
+                    <option key={lokasi.code} value={lokasi.code}>
+                      {lokasi.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.lokasi_arsip && (
+                  <p className="text-red-500 text-xs mt-1">{errors.lokasi_arsip}</p>
+                )}
               </div>
             </div>
 
-            {/* Bagian Detail Bantex */}
-            <div>
-              <div className="flex justify-between items-end mb-2 border-b border-gray-200 pb-2">
-                <h3 className="text-sm font-bold text-[#0c616a] uppercase">B. Isi Dokumen (Bantex)</h3>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${isBoxFull ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    Total Bantex: {calculatedBantex} {isBoxFull ? '(Box Penuh)' : '(Belum Penuh)'}
-                  </span>
-                  <span className="text-xs text-gray-400">*Idealnya 1 Box = 5-6 Bantex</span>
+            {/* Bantex Section */}
+            <div className="mb-6 border-t pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Bantex & Dokumen</h2>
+                <div className="flex items-center gap-4">
+                  <div className="text-sm">
+                    <p className="text-gray-600">
+                      Total Bantex: <span className="font-bold text-blue-600">{getBantexCount()}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      Total Box: <span className="font-bold text-green-600">{getBoxCount()}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-12">No</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nama Dokumen</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-40">Periode</th>
-                      <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase w-20">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {docItems.map((doc, index) => (
-                      <tr key={index}>
-                        <td className="px-4 py-2 text-sm text-gray-500 text-center">{doc.no}</td>
-                        <td className="px-4 py-2">
+              {/* Current Box Display */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h3 className="font-semibold text-gray-700 mb-3">
+                  Box {currentBox.box_number} {currentBox.bantex_items.length >= 6 && '(Penuh)'}
+                </h3>
+
+                {currentBox.bantex_items.length > 0 ? (
+                  <div className="space-y-3">
+                    {currentBox.bantex_items.map((bantex, index) => (
+                      <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-700 text-sm">
+                              Bantex {bantex.bantex_number}: {bantex.nama_bantex}
+                            </p>
+                            <div className="mt-2 pl-3 border-l-2 border-gray-300">
+                              {bantex.dokumen.map((doc, docIndex) => (
+                                <p key={docIndex} className="text-xs text-gray-600 py-1">
+                                  • {doc.nama} ({doc.periode})
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeBantex(index)}
+                            className="text-red-500 hover:text-red-700 transition"
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm italic">Belum ada bantex ditambahkan</p>
+                )}
+              </div>
+
+              {/* Button to add bantex */}
+              {!showBantexForm && currentBox.bantex_items.length < 6 && (
+                <button
+                  type="button"
+                  onClick={() => setShowBantexForm(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+                >
+                  <Plus size={20} />
+                  Tambah Bantex
+                </button>
+              )}
+
+              {/* Bantex Form Modal */}
+              {showBantexForm && (
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mt-4">
+                  <h3 className="font-semibold text-gray-800 mb-4">Form Bantex Baru</h3>
+
+                  {/* Nama Bantex */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nama Bantex <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={currentBantexForm.nama_bantex}
+                      onChange={(e) => {
+                        setCurrentBantexForm({ ...currentBantexForm, nama_bantex: e.target.value });
+                        if (errors.nama_bantex) {
+                          const newErrors = { ...errors };
+                          delete newErrors.nama_bantex;
+                          setErrors(newErrors);
+                        }
+                      }}
+                      placeholder="Contoh: Bantex Kontrak 2023"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition ${
+                        errors.nama_bantex
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-gray-300 focus:ring-blue-500'
+                      }`}
+                    />
+                    {errors.nama_bantex && (
+                      <p className="text-red-500 text-xs mt-1">{errors.nama_bantex}</p>
+                    )}
+                  </div>
+
+                  {/* Documents in Bantex */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Dokumen dalam Bantex <span className="text-red-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={addDocToBantex}
+                        className="flex items-center gap-1 text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+                      >
+                        <Plus size={14} /> Tambah Dokumen
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {currentBantexForm.dokumen.map((doc, index) => (
+                        <div key={index} className="flex gap-2 items-start">
                           <input
                             type="text"
-                            required
                             value={doc.nama}
-                            onChange={(e) => onDocChange(index, 'nama', e.target.value)}
-                            placeholder="Nama Dokumen / Bantex"
-                            className="w-full border-0 border-b border-gray-200 focus:border-[#1594a2] focus:ring-0 text-sm px-0 bg-transparent"
+                            onChange={(e) => handleDocChange(index, 'nama', e.target.value)}
+                            placeholder="Nama dokumen"
+                            className={`flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition ${
+                              errors[`doc_${index}_nama`]
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-gray-300 focus:ring-blue-500'
+                            }`}
                           />
-                        </td>
-                        <td className="px-4 py-2">
                           <input
                             type="text"
-                            required
                             value={doc.periode}
-                            onChange={(e) => onDocChange(index, 'periode', e.target.value)}
-                            placeholder="Tahun/Bulan"
-                            className="w-full border-0 border-b border-gray-200 focus:border-[#1594a2] focus:ring-0 text-sm px-0 bg-transparent"
+                            onChange={(e) => handleDocChange(index, 'periode', e.target.value)}
+                            placeholder="Periode (V/2023)"
+                            className={`w-32 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition ${
+                              errors[`doc_${index}_periode`]
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-gray-300 focus:ring-blue-500'
+                            }`}
                           />
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          {docItems.length > 1 && (
-                            <button type="button" onClick={() => onRemoveDocRow(index)} className="text-red-400 hover:text-red-600">
-                              <XCircle size={16} />
+                          {currentBantexForm.dokumen.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeDocFromBantex(index)}
+                              className="text-red-500 hover:text-red-700 transition mt-1"
+                            >
+                              <XCircle size={18} />
                             </button>
                           )}
-                        </td>
-                      </tr>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Errors for documents */}
+                    {currentBantexForm.dokumen.map((_, index) => (
+                      <div key={index}>
+                        {errors[`doc_${index}_nama`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`doc_${index}_nama`]}</p>
+                        )}
+                        {errors[`doc_${index}_periode`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`doc_${index}_periode`]}</p>
+                        )}
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-                <div className="p-2 bg-gray-100 border-t border-gray-200">
-                  <button type="button" onClick={onAddDocRow} className="text-xs flex items-center gap-1 text-[#1594a2] font-bold hover:underline">
-                    <Plus size={14} /> Tambah Baris Dokumen
-                  </button>
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveBantex}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
+                    >
+                      <Send size={18} /> Simpan Bantex
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBantexForm(false);
+                        setErrors({});
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition font-semibold"
+                    >
+                      <XCircle size={18} /> Batal
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Error message for bantex */}
+              {errors.bantex && <p className="text-red-500 text-sm mt-2">{errors.bantex}</p>}
             </div>
 
-            {/* Info Box */}
-            <div className="bg-blue-50 p-4 rounded-md border border-blue-100 flex gap-3">
-              <Info className="text-blue-500 mt-0.5 flex-shrink-0" size={20} />
-              <div className="text-sm text-blue-800">
-                <p className="font-bold">Informasi Alur:</p>
-                <ul className="list-disc ml-4 mt-1 space-y-1 text-xs">
-                  <li>Isi semua dokumen yang ada di dalam box ini.</li>
-                  <li>Jika sudah mencapai 5-6 bantex, box dianggap penuh dan siap diajukan.</li>
-                  <li>Setelah klik "Ajukan Box", data akan dikirim ke Admin.</li>
-                  <li><strong>Nomor Kotak / RFID</strong> akan muncul setelah Admin melakukan ACC.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4">
+            {/* Submit Button */}
+            <div className="flex gap-3 pt-4 border-t">
               <button
                 type="submit"
-                className="flex items-center gap-2 px-8 py-3 text-white rounded-lg hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-bold"
-                style={{ backgroundColor: COLORS.secondary }}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-lg"
               >
-                <Send size={18} />
-                Ajukan Box Sekarang
+                <Send size={20} /> Submit Arsip
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setShowBantexForm(false);
+                  setErrors({});
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-bold text-lg"
+              >
+                <XCircle size={20} /> Reset
               </button>
             </div>
           </form>
         </div>
+
+        {/* Info Box */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+          <Info size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-gray-700">
+              <strong>Informasi:</strong> Setiap kotak dapat menampung hingga 6 bantex. Sistem akan secara otomatis membuat kotak baru ketika jumlah bantex mencapai 6.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
-};
+}

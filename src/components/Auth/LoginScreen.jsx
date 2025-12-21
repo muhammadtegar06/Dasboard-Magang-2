@@ -10,7 +10,7 @@ export const LoginScreen = ({ username, password, onUsernameChange, onPasswordCh
           <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 text-white shadow-lg" style={{ backgroundColor: COLORS.dark }}>
             <Package size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Sistem Repository Arsip</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Repository Arsip</h1>
           <p className="text-gray-500 text-sm mt-2">Masuk untuk mengelola Box & Bantex</p>
         </div>
 

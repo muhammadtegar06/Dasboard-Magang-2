@@ -7,7 +7,7 @@ export const Header = ({ onMenuClick }) => {
       <button onClick={onMenuClick} className="text-gray-600">
         <Menu size={24} />
       </button>
-      <span className="font-bold text-[#0c616a]">INDOARSIP REPO</span>
+      <span className="font-bold text-[#0c616a]">REPOSITORY ARSIP</span>
       <div className="w-6"></div>
     </header>
   );

@@ -10,8 +10,8 @@ export const Sidebar = ({ userRole, view, onViewChange, onLogout }) => {
         <div className="flex items-center gap-2">
           <Archive size={28} color={COLORS.secondary} />
           <div>
-            <h2 className="text-lg font-bold tracking-wider leading-none">INDOARSIP</h2>
-            <span className="text-xs text-gray-300 tracking-widest">REPOSITORY</span>
+            <h2 className="text-lg font-bold tracking-wider leading-none">REPOSITORY</h2>
+            <span className="text-xs text-gray-300 tracking-widest">ARSIP</span>
           </div>
         </div>
       </div>

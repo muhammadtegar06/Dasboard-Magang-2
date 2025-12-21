@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { LoginScreen } from './components/Auth/LoginScreen';
 import { MainLayout } from './components/Layout/MainLayout';
 import { DashboardView } from './components/Dashboard/DashboardView';
-import { InputBoxView } from './components/Box/InputBoxView';
+import InputBoxView from './components/Box/InputBoxView';
 import { DataBoxView } from './components/Box/DataBoxView';
 import { useAuth } from './hooks/useAuth';
 import { useBoxes } from './hooks/useBoxes';
@@ -36,11 +36,6 @@ export default function App() {
     boxes.resetForm();
   };
 
-  const handleSubmitBox = (newBox) => {
-    boxes.submitBox(newBox);
-    setView('data-box');
-  };
-
   // Login Screen
   if (view === 'login') {
     return (
@@ -68,16 +63,7 @@ export default function App() {
         <DashboardView boxes={boxes.boxes} onViewChange={setView} />
       )}
       {view === 'input-box' && (
-        <InputBoxView
-          userRole={auth.userRole}
-          formData={boxes.formData}
-          docItems={boxes.docItems}
-          onFormChange={(field, value) => boxes.setFormData({ ...boxes.formData, [field]: value })}
-          onDocChange={boxes.handleDocChange}
-          onAddDocRow={boxes.addDocRow}
-          onRemoveDocRow={boxes.removeDocRow}
-          onSubmit={handleSubmitBox}
-        />
+        <InputBoxView />
       )}
       {view === 'data-box' && (
         <DataBoxView
