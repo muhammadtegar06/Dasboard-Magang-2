@@ -5,7 +5,7 @@ import { validateBoxForm, validateDocuments, validatePeriodeFormat } from '../..
 import { getCurrentDate } from '../../utils/formatters';
 import { useBoxes } from '../../hooks/useBoxes';
 
-export default function InputBoxView() {
+export default function InputBoxView({ onSubmitSuccess }) {
   const {
     formData,
     setFormData,
@@ -138,7 +138,12 @@ export default function InputBoxView() {
     };
 
     submitBox(newBox);
-    alert('Data berhasil disubmit! Tunggu persetujuan admin.');
+    alert('Data berhasil disubmit! Silakan lihat di Data Box Arsip untuk konfirmasi admin.');
+    
+    // Redirect to data box view
+    if (onSubmitSuccess) {
+      setTimeout(() => onSubmitSuccess(), 500);
+    }
   };
 
   return (

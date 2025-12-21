@@ -63,7 +63,7 @@ export default function App() {
         <DashboardView boxes={boxes.boxes} onViewChange={setView} />
       )}
       {view === 'input-box' && (
-        <InputBoxView />
+        <InputBoxView onSubmitSuccess={() => setView('data-box')} />
       )}
       {view === 'data-box' && (
         <DataBoxView
